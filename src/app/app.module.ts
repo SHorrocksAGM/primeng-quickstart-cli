@@ -16,7 +16,10 @@ import { RatingModule } from 'primeng/rating';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ConfirmationService } from 'primeng/api';
 
+import {MessagesModule} from 'primeng/messages';
+
 import { AppComponent } from './app.component';
+import { ToastModule } from 'primeng/toast';
 
 @NgModule({
     declarations: [
@@ -25,6 +28,8 @@ import { AppComponent } from './app.component';
     imports: [
         BrowserModule,
         BrowserAnimationsModule,
+        ToastModule,
+        MessagesModule,
         FormsModule,
         TableModule,
         HttpClientModule,

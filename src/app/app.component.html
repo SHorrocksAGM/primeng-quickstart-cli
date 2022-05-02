@@ -4,9 +4,14 @@
         <button pButton pRipple [label]="Delete" icon="pi pi-trash" class="p-button-danger" (click)="deleteSelectedProducts()" [disabled]="!selectedProducts || !selectedProducts.length"></button>
     </ng-template>
 
+    <ng-template pTemplate="center">
+        <p-messages></p-messages>
+    </ng-template>
+
     <ng-template pTemplate="right">
         <button pButton pRipple label="Export" icon="pi pi-upload" class="p-button-help"></button>
     </ng-template>
+    
 </p-toolbar>
 
 <p-table #dt [value]="products" [rows]="10" [paginator]="true" [globalFilterFields]="['name','country.name','representative.name','status']"
@@ -117,3 +122,4 @@
 </p-dialog>
 
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+<p-toast position="bottom-center"></p-toast>

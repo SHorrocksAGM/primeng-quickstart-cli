@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Product } from './domain/product';
 import { ProductService } from './services/productservice';
+import {ToastModule} from 'primeng/toast';
+import { SignalRService } from './services/SignalR.service';
 
 @Component({
     selector: 'app-root',
@@ -23,10 +25,31 @@ export class AppComponent implements OnInit {
 
     statuses: any[];
 
-    constructor(private productService: ProductService, private messageService: MessageService, private confirmationService: ConfirmationService) { }
+    constructor(
+        private productService: ProductService, 
+        private messageService: MessageService, 
+        private confirmationService: ConfirmationService,
+        private readonly signalrSvc: SignalRService
+        ) {
+            signalrSvc.productAdded.subscribe(product => {
+                this.products = [product, ...this.products];
+            });
+
+            signalrSvc.productUpdated.subscribe(product => {
+                this.products = this.products.filter(x => x.id !== product.id);
+                this.products = [product, ...this.products];
+            });
+
+            signalrSvc.productDeleted.subscribe(productId => {
+                this.products = this.products.filter(x => x.id !== productId);
+            });
+        }
 
     ngOnInit() {
-        this.productService.getProducts().then(data => this.products = data);
+        // this.productService.getProducts().then(data => this.products = data);
+        this.productService.getProducts().subscribe(products => {
+            this.products = products;
+        });
 
         this.statuses = [
             {label: 'INSTOCK', value: 'instock'},
@@ -65,9 +88,11 @@ export class AppComponent implements OnInit {
             header: 'Confirm',
             icon: 'pi pi-exclamation-triangle',
             accept: () => {
-                this.products = this.products.filter(val => val.id !== product.id);
-                this.product = {};
-                this.messageService.add({severity:'success', summary: 'Successful', detail: 'Product Deleted', life: 3000});
+                this.productService.deleteProduct(parseInt(product.id)).subscribe(() => console.log('deleted'), err => console.error(err), () => {
+                    this.products = this.products.filter(val => val.id !== product.id);
+                    this.product = {};
+                    this.messageService.add({severity:'success', summary: 'Successful', detail: 'Product Deleted', life: 3000});
+                });
             }
         });
     }
@@ -82,14 +107,30 @@ export class AppComponent implements OnInit {
 
         if (this.product.name.trim()) {
             if (this.product.id) {
-                this.products[this.findIndexById(this.product.id)] = this.product;                
-                this.messageService.add({severity:'success', summary: 'Successful', detail: 'Product Updated', life: 3000});
+
+                this.productService.updateProduct(parseInt(this.product.id), this.product).subscribe(data => 
+                { 
+                    this.product = data; console.log('updated');
+                }
+                , err => console.log(err)
+                , () => {
+                    this.products[this.findIndexById(this.product.id)] = this.product;                
+                    this.messageService.add({severity:'success', summary: 'Successful', detail: 'Product Updated', life: 3000});
+                });
             }
             else {
-                this.product.id = this.createId();
+                
                 this.product.image = 'product-placeholder.svg';
-                this.products.push(this.product);
-                this.messageService.add({severity:'success', summary: 'Successful', detail: 'Product Created', life: 3000});
+                this.productService.addProduct(this.product).subscribe(data => 
+                { 
+                    this.product = data; console.log('added');
+                }
+                , err => console.log(err)
+                , () => {
+                    this.signalrSvc.sendProductAdded(this.product);
+                    this.products.push(this.product);
+                    this.messageService.add({severity:'success', summary: 'Successful', detail: 'Product Created', life: 3000});
+                });
             }
 
             this.products = [...this.products];
